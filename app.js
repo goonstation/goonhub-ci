@@ -1,4 +1,5 @@
 import express from 'express'
+import fs from 'fs'
 import config from './config.js'
 import Builder from './builder.js'
 
@@ -28,6 +29,7 @@ app.post('/build', (req, res) => {
 	if (!server) return res.status(400).json({error: "Missing server ID"})
 	try {
 		res.status(200).json({success: true}).end()
+		BuilderInstance.log(`Manual build for ${server} triggered`)
 		BuilderInstance.build(server, { fetchRepo: true })
 	} catch(e) {
 		console.error(e)
@@ -43,7 +45,7 @@ app.post('/switch-map', (req, res) => {
 	try {
 		BuilderInstance.setMapOverride(server, map)
 		res.status(200).json({success: true}).end()
-		BuilderInstance.build(server, { skipNotifier: true, skipCdn: true })
+		BuilderInstance.build(server, { mapSwitch: true, skipCdn: true })
 	} catch(e) {
 		console.error(e)
 		res.status(500).json({error: e}).end()

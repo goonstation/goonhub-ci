@@ -1,4 +1,4 @@
-import http from 'http'
+import https from 'https'
 import config from './config.js'
 
 class MedAss {
@@ -12,7 +12,7 @@ class MedAss {
 		payload.api_key = this.key
 		const data = JSON.stringify(payload)
 		const options = {
-		  hostname: this.url,
+		  host: this.url,
 		  port: this.port,
 		  path: '/wireci/build_finished',
 		  method: 'POST',
@@ -22,7 +22,7 @@ class MedAss {
 		  }
 		}
 
-		const req = http.request(options)	
+		const req = https.request(options)	
 		req.on('error', error => {
 		  console.error(error)
 		})

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+source utilities.sh
 server_id="$1"
 compile_log="$2"
 cd "/ss13_servers/$server_id"
@@ -8,26 +9,34 @@ cd "/ss13_servers/$server_id"
 # PRECOMPILE START
 ##
 
-if [ -f "game/data/mapoverride" ]; then
-	map_override=$(cat game/data/mapoverride)
+d_log "Running pre-compile steps"
+
+d_log "Reading existing map override"
+if [ -f "mapoverride" ]; then
+	map_override=$(cat mapoverride)
+	d_log "Map override found: $map_override"
 fi
 
 # Set CDN group from server ID
+d_log "Setting CDN group"
 cdn_group="main"
 [[ "$server_id" == dev* ]] && cdn_group="dev"
 [[ "$server_id" == streamer* ]] && cdn_group="streamer"
 
 # Set preload URL from CDN group
+d_log "Setting preload RSC URL"
 preload_rsc_url="https://cdn.goonhub.com/rsc.zip"
 [ "$cdn_group" = "dev" ] && preload_rsc_url="https://cdndev.goonhub.com/rsc.zip"
 [ "$cdn_group" = "streamer" ] && preload_rsc_url="https://cdnstreamer.goonhub.com/rsc.zip"
 
 # Yeah I guess we'll just set rp mode this dumb way
-if [ "$server_id" = "main3" ] || [ "$server_id" = "main4" ]; then
+d_log "Setting RP mode"
+if [ "$server_id" = "main3" ] || [ "$server_id" = "main4" ] || [ "$server_id" = "main5" ]; then
 	rp_mode="yes"
 fi
 
 cd repo
+d_log "Building __build.dm stamps"
 build_out=$(cat <<END_HEREDOC
 #define LIVE_SERVER
 var/global/vcs_revision = "$(git rev-parse HEAD)"
@@ -48,16 +57,24 @@ END_HEREDOC
 cd ..
 
 if [ -n "$map_override" ]; then
-	echo "Map override detected, applying define..."
+	d_log "Map override detected ($map_override), applying define"
 	build_out+="
 #define MAP_OVERRIDE_$map_override"
 fi
 
 if [ -n "$rp_mode" ]; then
-	echo "RP mode detected, applying define..."
+	d_log "RP mode detected, applying define"
 	build_out+="
 #define RP_MODE"
 fi
+
+if [ "$cdn_group" = "streamer" ]; then
+	d_log "Streamer mode detected, applying define"
+	build_out+="
+#define NIGHTSHADE"
+fi
+
+d_log "Finished pre-compile steps"
 
 ##
 # PRECOMPILE END
@@ -66,32 +83,38 @@ fi
 # COMPILE START
 ##
 
+d_log "Running compile steps"
+
+d_log "Cleaning up build dir"
 rm -r build/* >/dev/null 2>&1 || true
 # Copy repo files minus hidden folders (like .git) to our build dir
+d_log "Copying files from repo dir to build dir"
 rsync -a --exclude=".*" repo/* build
 cd build
 
-source buildByond.conf
-BYONDDIR="/byond/$BYOND_MAJOR_VERSION.$BYOND_MINOR_VERSION"
-export PATH=$BYONDDIR/bin:$PATH
-export LD_LIBRARY_PATH=$BYONDDIR/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-
 # Stamp build-time info
+d_log "Stamping __build.dm and config.txt"
 echo "$build_out" > _std/__build.dm
 cp -R +secret/config/* config/
 cat /app/keys.txt >> config/config.txt
 
+source buildByond.conf
+BYONDDIR="/byond/$BYOND_MAJOR_VERSION.$BYOND_MINOR_VERSION"
+
+export PATH=$BYONDDIR/bin:$PATH
+export LD_LIBRARY_PATH=$BYONDDIR/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
 #echo "thisProcDoesNotExist()" >> code/world.dm
-DreamMaker goonstation.dme > "$compile_log"
+d_log "Compiling"
+DreamMaker goonstation.dme | tee "$compile_log" | ts "      [%Y/%m/%d %H:%M:%S]"
 
-# Make and deploy rsc.zip
-echo "Building RSC zip..."
-zip -9 rsc.zip goonstation.rsc
-echo "Deploying RSC zip..."
-mv rsc.zip "/goonhub_cdn/public/$cdn_group"
+d_log "Copying built files to pre-deploy"
+rm -r ../deploy/new/* >/dev/null 2>&1 || true
+mkdir ../deploy/new/+secret
+cp -r goonstation.dmb goonstation.rsc buildByond.conf assets config strings sound ../deploy/new
+cp -r +secret/assets +secret/strings ../deploy/new/+secret
 
-cd ..
-rsync -a --exclude=data --exclude=adventure build/* game/update
+d_log "Finished compile steps"
 
 ##
 # COMPILE END

@@ -1,5 +1,5 @@
 {
-	"name": "goonhub_ci",
+	"name": "goonhub_cd",
     "script": "app.js",
     "watch": false,
     "ignore_watch": ["node_modules", "logs"],

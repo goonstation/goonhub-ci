@@ -1,5 +1,6 @@
 import fs from 'fs'
-import { exec } from 'child_process'
+import { exec, execSync } from 'child_process'
+import config from './config.js'
 import { shuffleArray } from './utilities.js'
 import Repo from './repo.js'
 import MedAss from './medass.js'
@@ -14,10 +15,12 @@ export default class Builder {
 		this.serversFolder = '/ss13_servers'
 	}
 
-	log(...msg) {
+	log(msg) {
 		if (!debug) return
 		const now = (new Date()).toISOString().slice(0, 19).replace(/-/g, "/").replace("T", " ")
-		console.log(`[${now}]`, ...msg)
+		const out = `[${now}] ${msg}`
+		console.log(out)
+		fs.appendFile('logs/build.log', `${out}\n`, err => {})
 	}
 	
 	getConfig() {
@@ -30,7 +33,7 @@ export default class Builder {
 	}
 
 	setMapOverride(server, map) {
-		return fs.writeFileSync(`${this.serversFolder}/${server}/game/data/mapoverride`, map)
+		return fs.writeFileSync(`${this.serversFolder}/${server}/mapoverride`, map.toUpperCase())
 	}
 
 	build(server, opts) {
@@ -38,6 +41,7 @@ export default class Builder {
 			skipNotifier: false,
 			skipCdn: false,
 			fetchRepo: false,
+			mapSwitch: false,
 			...opts
 		}
 		this.log(`Building ${server}`)
@@ -45,10 +49,10 @@ export default class Builder {
 		// Queue this server for a build if we're already building it
 		if (this.currentCompileJobs.includes(server)) {
 			if (!this.queuedJobs.find(e => e.server === server)) {
-				this.log(`Queueing ${server} for a build as it's already being built`, this.queuedJobs)
+				this.log(`Queueing ${server} for a build as it's already being built. ${JSON.stringify(this.queuedJobs)}`)
 				this.queuedJobs.push({ server, opts })
 			} else {
-				this.log(`Already building ${server} and it's already queued. Stop building me!!`, this.queuedJobs)
+				this.log(`Already building ${server} and it's already queued. Stop building me!! ${JSON.stringify(this.queuedJobs)}`)
 			}
 			return
 		}
@@ -60,7 +64,7 @@ export default class Builder {
 		Repo.update(repoFolder)
 
 		const compileLog = `/app/logs/builds/${server}-${Math.random().toString(36).substr(2, 9)}.log`		
-		let cmd = `/bin/bash scripts/gate.sh -s ${server} -b ${compileLog}`
+		let cmd = `/bin/bash scripts/gate.sh -s ${server} -b ${compileLog} -c ${config.apiKey}`
 		if (opts.skipCdn) cmd += ' -r'
 		exec(cmd, (err, stdout, stderr) => {
 			let lastCompileLogs = ''
@@ -76,14 +80,15 @@ export default class Builder {
 				author: Repo.getAuthor(repoFolder, commit).trim(),
 				message: Repo.getMessage(repoFolder, commit).trim(),
 				commit: commit.trim(),
-				error: null
+				error: null,
+				mapSwitch: opts.mapSwitch
 			}
 			
 			if (err || stderr) {
-				this.log(`Building ${server} failed`, { err, stderr })
+				this.log(`Building ${server} failed. Error: ${err}. Stderr: ${stderr}`)
 				payload.error = stderr || true
 			} else {
-				this.log(`Building ${server} succeeded!`)
+				this.log(`Building ${server} succeeded! Output:\n${stdout}`)
 			}
 			if (!opts.skipNotifier) MedAss.sendBuildComplete(payload)
 			this.currentCompileJobs = this.currentCompileJobs.filter(e => e !== server)
@@ -95,7 +100,7 @@ export default class Builder {
 					// Already building this server
 					if (this.currentCompileJobs.includes(qServer)) continue
 					// Remove the queued job, and trigger it
-					this.log(`Triggering queued job for ${server}`, this.queuedJobs)
+					this.log(`Triggering queued job for ${server}. ${JSON.stringify(this.queuedJobs)}`)
 					this.queuedJobs = this.queuedJobs.filter(e => e.server !== qServer)
 					this.build(qServer, queuedJob.opts)
 					break
@@ -105,7 +110,7 @@ export default class Builder {
 	}
 
 	run() {
-		this.log('Starting run')
+		// this.log('Starting run')
 		if (this.currentCompileJobs.length >= this.maxCompileJobs) {
 			this.log('Already running max compile jobs, aborting.')
 			return
@@ -132,6 +137,6 @@ export default class Builder {
 			}
 		}
 
-		this.log('Finished run')
+		// this.log('Finished run')
 	}
 }

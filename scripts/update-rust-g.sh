@@ -1,15 +1,19 @@
 #!/bin/bash
 set -e
-server_id="$1"
-rust_g_build="/rust-g/target/i686-unknown-linux-gnu/release/librust_g.so"
 
-cd "/ss13_servers/$server_id"
+echo "Updating rust-g"
+cd /rust-g
 
-if cmp -s "$rust_g_build" "game/librust_g.so"; then
-	echo "Rust-g is latest, skipping update"
-else
-	echo "Updating rust-g"
-	cp "$rust_g_build" "game/update"
-fi
+echo "Fetching latest version"
+git fetch
+git reset --hard origin/master
 
-echo "Updated rust-g!"
+echo "Compiling rust-g"
+rustup target add i686-unknown-linux-gnu
+rustup update
+export RUSTFLAGS="-C target-cpu=native"
+export PKG_CONFIG_ALLOW_CROSS=1
+#cargo build --all-features --release --target i686-unknown-linux-gnu
+cargo build --release --target i686-unknown-linux-gnu --no-default-features --features "acreplace, cellularnoise, dmi, file, git, http, json, log, noise, time, toml, url, batchnoise, hash, worleynoise"
+
+echo "Rust-g update complete"
