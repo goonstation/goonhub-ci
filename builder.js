@@ -36,6 +36,24 @@ export default class Builder {
 		return fs.writeFileSync(`${this.serversFolder}/${server}/mapoverride`, map.toUpperCase())
 	}
 
+	getBranch(server, branch) {
+		const repoFolder = this.getRepoFolder(server)
+		if (!fs.existsSync(repoFolder)) throw new Error('That server does not exist')
+		return Repo.getBranch(repoFolder).trim()
+	}
+
+	switchBranch(server, branch) {
+		const repoFolder = this.getRepoFolder(server)
+		if (!fs.existsSync(repoFolder)) throw new Error('That server does not exist')
+		Repo.fetch(repoFolder)
+		if (Repo.doesBranchExist(repoFolder, branch).trim() === '0') {
+			throw new Error('That branch does not exist')
+		}
+		Repo.checkout(repoFolder, branch)
+		Repo.clean(repoFolder)
+		Repo.update(repoFolder)
+	}
+
 	build(server, opts) {
 		opts = {
 			skipNotifier: false,

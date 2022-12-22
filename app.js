@@ -24,6 +24,31 @@ app.get('/status', (req, res) => {
 	}).end()
 })
 
+app.get('/branch/:server', (req, res) => {
+	const server = req.params.server
+	if (!server) return res.status(400).json({error: "Missing server ID"})
+	try {
+		res.status(200).json({
+			branch: BuilderInstance.getBranch(server)
+		}).end()
+	} catch(e) {
+		res.status(500).json({error: e.message}).end()
+	}
+})
+
+app.post('/switch-branch', (req, res) => {
+	const server = req.body.server
+	const branch = req.body.branch
+	if (!server) return res.status(400).json({error: "Missing server ID"})
+	if (!branch) return res.status(400).json({error: "Missing branch"})
+	try {
+		BuilderInstance.switchBranch(server, branch)
+		res.status(200).json({success: true}).end()
+	} catch(e) {
+		res.status(500).json({error: e.message}).end()
+	}
+})
+
 app.post('/build', (req, res) => {
 	const server = req.body.server
 	if (!server) return res.status(400).json({error: "Missing server ID"})
@@ -32,8 +57,7 @@ app.post('/build', (req, res) => {
 		BuilderInstance.log(`Manual build for ${server} triggered`)
 		BuilderInstance.build(server, { fetchRepo: true })
 	} catch(e) {
-		console.error(e)
-		res.status(500).json({error: e}).end()
+		res.status(500).json({error: e.message}).end()
 	}
 })
 
@@ -47,8 +71,7 @@ app.post('/switch-map', (req, res) => {
 		res.status(200).json({success: true}).end()
 		BuilderInstance.build(server, { mapSwitch: true, skipCdn: true })
 	} catch(e) {
-		console.error(e)
-		res.status(500).json({error: e}).end()
+		res.status(500).json({error: e.message}).end()
 	}
 })
 

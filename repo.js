@@ -28,4 +28,16 @@ export default class Repo {
 	static getMessage(dir, commit) {
 		return execSync(`git log --format="%B" -n 1 ${commit}`, { cwd: dir }).toString()
 	}
+
+	static doesBranchExist(dir, branch) {
+		return execSync(`git ls-remote --heads origin ${branch} | wc -l`, { cwd: dir }).toString()
+	}
+
+	static checkout(dir, branch) {
+		return execSync(`git checkout -q --recurse-submodules ${branch}`, { cwd: dir }).toString()
+	}
+
+	static clean(dir) {
+		return execSync(`git clean -fd`, { cwd: dir }).toString()
+	}
 }
