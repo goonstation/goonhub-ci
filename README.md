@@ -1,4 +1,4 @@
-# Goonhub CD (Continuous Deployment)
+# Goonhub CI (Continuous Integration)
 
 This is a little dinky node server wrapper over a bunch of bash scripts that are
 responsible for compiling Goonstation, as well as the ancillary services such as
