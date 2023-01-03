@@ -98,9 +98,10 @@ app.post('/restart', (req, res) => {
 	}
 })
 
-app.get('/test-merges', async (req, res) => {
+app.get('/test-merges/:server?', async (req, res) => {
+	const server = req.params.server
 	try {
-		const allTestMerges = await TestMerges.getAll()
+		const allTestMerges = await TestMerges.getAll(server)
 		res.status(200).json(allTestMerges)
 	} catch (e) {
 		res.status(500).json({error: e.message})
