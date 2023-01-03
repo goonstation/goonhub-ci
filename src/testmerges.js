@@ -46,7 +46,7 @@ class TestMerges {
 						$pr: prId,
 						$server: serverId,
 						$requester: requester,
-						$commit: commit
+						$commit: commit || null
 					},
 					(error) => {
 						if (error) return reject(error)
