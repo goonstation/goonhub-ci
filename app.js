@@ -1,7 +1,10 @@
 import express from 'express'
 import fs from 'fs'
 import config from './config.js'
-import Builder from './builder.js'
+import Runner from './src/runner.js'
+import Branches from './src/branches.js'
+import TestMerges from './src/testmerges.js'
+import { log, serverConfig } from './src/utils.js'
 
 const hostname = '0.0.0.0'
 const port = 3000
@@ -9,7 +12,7 @@ const port = 3000
 const app = express()
 app.use(express.json())
 
-const BuilderInstance = new Builder
+const RunnerInstance = new Runner
 
 app.use((req, res, next) => {
 	if (req.header('Api-Key') === config.apiKey) next()
@@ -18,67 +21,139 @@ app.use((req, res, next) => {
 
 app.get('/status', (req, res) => {
 	res.json({
-		maxCompileJobs: BuilderInstance.maxCompileJobs,
-		currentCompileJobs: BuilderInstance.currentCompileJobs,
-		queuedJobs: BuilderInstance.queuedJobs.map(e => e.server)
+		maxCompileJobs: RunnerInstance.maxJobs,
+		currentCompileJobs: RunnerInstance.currentJobs,
+		queuedJobs: RunnerInstance.queuedJobs.map(e => e.server)
 	}).end()
 })
 
 app.get('/branch/:server', (req, res) => {
 	const server = req.params.server
-	if (!server) return res.status(400).json({error: "Missing server ID"})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
 	try {
-		res.status(200).json({
-			branch: BuilderInstance.getBranch(server)
-		}).end()
+		res.status(200).json({ branch: Branches.getBranch(server) })
 	} catch(e) {
-		res.status(500).json({error: e.message}).end()
+		res.status(500).json({error: e.message})
 	}
 })
 
 app.post('/switch-branch', (req, res) => {
 	const server = req.body.server
 	const branch = req.body.branch
-	if (!server) return res.status(400).json({error: "Missing server ID"})
-	if (!branch) return res.status(400).json({error: "Missing branch"})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	if (!branch) return res.status(400).json({error: 'Missing branch'})
 	try {
-		BuilderInstance.switchBranch(server, branch)
-		res.status(200).json({success: true}).end()
+		Branches.switchBranch(server, branch)
+		res.status(200).json({success: true})
 	} catch(e) {
-		res.status(500).json({error: e.message}).end()
+		res.status(500).json({error: e.message})
 	}
 })
 
 app.post('/build', (req, res) => {
 	const server = req.body.server
-	if (!server) return res.status(400).json({error: "Missing server ID"})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
 	try {
 		res.status(200).json({success: true}).end()
-		BuilderInstance.log(`Manual build for ${server} triggered`)
-		BuilderInstance.build(server, { fetchRepo: true })
+		log(`Manual build for ${server} triggered`)
+		RunnerInstance.build(server)
 	} catch(e) {
-		res.status(500).json({error: e.message}).end()
+		log(e)
+		// res.status(500).json({error: e.message})
 	}
 })
 
 app.post('/switch-map', (req, res) => {
 	const server = req.body.server
 	const map = req.body.map
-	if (!server) return res.status(400).json({error: "Missing server ID"})
-	if (!map) return res.status(400).json({error: "Missing map"})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	if (!map) return res.status(400).json({error: 'Missing map'})
 	try {
-		BuilderInstance.setMapOverride(server, map)
 		res.status(200).json({success: true}).end()
-		BuilderInstance.build(server, { mapSwitch: true, skipCdn: true })
+		RunnerInstance.build(server, { switchToMap: map, skipCdn: true })
 	} catch(e) {
-		res.status(500).json({error: e.message}).end()
+		log(e)
+		// res.status(500).json({error: e.message})
+	}
+})
+
+app.post('/restart', (req, res) => {
+	const server = req.body.server
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	try {
+		const servers = serverConfig.servers
+		let valid = false
+		for (const cServer in servers) {
+			const settings = servers[cServer]
+			if (cServer === server && settings.active) {
+				valid = true
+				break
+			}
+		}
+		if (!valid) return res.status(400).json({error: 'Invalid server ID'})
+		fs.closeSync(fs.openSync(`/remote_ss13/restarter/triggers/${server}`, 'w'))
+		res.status(200).json({success: true})
+	} catch(e) {
+		res.status(500).json({error: e.message})
+	}
+})
+
+app.get('/test-merges', async (req, res) => {
+	try {
+		const allTestMerges = await TestMerges.getAll()
+		res.status(200).json(allTestMerges)
+	} catch (e) {
+		res.status(500).json({error: e.message})
+	}
+})
+
+app.post('/test-merges', async (req, res) => {
+	const pr = req.body.pr
+	const server = req.body.server
+	const requester = req.body.requester
+	const commit = req.body.commit
+	if (!pr) return res.status(400).json({error: 'Missing PR ID'})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	try {
+		await TestMerges.add(pr, server, requester, commit)
+		res.status(200).json({success: true})
+	} catch (e) {
+		res.status(500).json({error: e.message})
+	}
+})
+
+app.put('/test-merges', async (req, res) => {
+	const pr = req.body.pr
+	const server = req.body.server
+	const updater = req.body.updater
+	const commit = req.body.commit
+	if (!pr) return res.status(400).json({error: 'Missing PR ID'})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	try {
+		await TestMerges.update(pr, server, updater, commit)
+		res.status(200).json({success: true})
+	} catch (e) {
+		res.status(500).json({error: e.message})
+	}
+})
+
+app.delete('/test-merges', async (req, res) => {
+	const pr = req.body.pr
+	const server = req.body.server
+	if (!pr) return res.status(400).json({error: 'Missing PR ID'})
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	try {
+		await TestMerges.remove(pr, server)
+		res.status(200).json({success: true})
+	} catch (e) {
+		res.status(500).json({error: e.message})
 	}
 })
 
 app.listen(port, hostname, () => {
-	console.log(`Server running at http://${hostname}:${port}/`)
+	console.log(`Server running at https://${hostname}:${port}/`)
 })
 
 setInterval(() => {
-	BuilderInstance.run()
+	RunnerInstance.run()
 }, 2 * 1000 * 60)

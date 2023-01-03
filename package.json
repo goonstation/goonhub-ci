@@ -1,5 +1,5 @@
 {
-	"name": "goonhub-cd",
+	"name": "goonhub-ci",
 	"version": "1.0.0",
 	"description": "",
 	"author": "Wire <wirewraith@gmail.com>",
@@ -9,6 +9,10 @@
 		"start": "node app.js"
 	},
 	"dependencies": {
-		"express": "^4.17.1"
+		"express": "^4.18.1",
+		"sqlite3": "^5.1.4"
+	},
+	"imports": {
+		"#src/*": "./src/*"
 	}
 }

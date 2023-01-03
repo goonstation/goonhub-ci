@@ -60,7 +60,7 @@ n exec 10.16.0 npm install --no-progress >/dev/null 2>&1
 grunt build-cdn --servertype=$cdn_group >/dev/null 2>&1
 
 d_log "Copying built files to pre-deploy"
-cp -r build "/ss13_servers/$server_id/deploy/new/cdn"
+cp -r build "/ss13_servers/$server_id/deploy/cdn"
 
 cd ..
 rm "$cdn_group.lock" >/dev/null 2>&1 || true

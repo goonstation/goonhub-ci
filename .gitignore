@@ -2,3 +2,4 @@ node_modules
 logs/**/*.log
 config.js
 keys.txt
+*.db

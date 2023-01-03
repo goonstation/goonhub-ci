@@ -4,10 +4,9 @@ server_id="$1"
 branch="$2"
 
 cd /ss13_servers
-#mkdir "$server_id"
+mkdir "$server_id"
 cd "$server_id"
-#mkdir repo build deploy deploy/current deploy/new
-mkdir deploy/current deploy/new
+mkdir repo build deploy
 
 cd repo
 git clone --recurse-submodules -b "$branch" https://github.com/goonstation/goonstation .

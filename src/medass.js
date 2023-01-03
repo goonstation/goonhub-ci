@@ -1,5 +1,5 @@
 import https from 'https'
-import config from './config.js'
+import config from '../config.js'
 
 class MedAss {
 	constructor() {
@@ -9,6 +9,7 @@ class MedAss {
 	}
 
 	sendBuildComplete(payload) {
+		if (!this.key) return
 		payload.api_key = this.key
 		const data = JSON.stringify(payload)
 		const options = {
@@ -22,7 +23,7 @@ class MedAss {
 		  }
 		}
 
-		const req = https.request(options)	
+		const req = https.request(options)
 		req.on('error', error => {
 		  console.error(error)
 		})

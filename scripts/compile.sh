@@ -3,6 +3,9 @@ set -e
 source utilities.sh
 server_id="$1"
 compile_log="$2"
+github_token="$3"
+merged_prs="$4"
+current_branch="$5"
 cd "/ss13_servers/$server_id"
 
 ##
@@ -37,10 +40,20 @@ fi
 
 cd repo
 d_log "Building __build.dm stamps"
+
+local_hash=$(git rev-parse @)
+local_author=$(git log --format="%an" -n 1 $local_hash)
+origin_hash=$(git rev-parse $current_branch)
+origin_author=$(git log --format="%an" -n 1 $origin_hash)
+
 build_out=$(cat <<END_HEREDOC
 #define LIVE_SERVER
-var/global/vcs_revision = "$(git rev-parse HEAD)"
-var/global/vcs_author = "$(git log -1 --pretty=format:'%an')"
+var/global/vcs_revision = "$local_hash"
+var/global/vcs_author = "$local_author"
+#define VCS_REVISION "$local_hash"
+#define VCS_AUTHOR "$local_author"
+#define ORIGIN_REVISION "$origin_hash"
+#define ORIGIN_AUTHOR "$origin_author"
 #define BUILD_TIME_TIMEZONE_ALPHA "$(date +"%Z")"
 #define BUILD_TIME_TIMEZONE_OFFSET $(date +"%z")
 #define BUILD_TIME_FULL "$(date +"%F %T")"
@@ -72,6 +85,23 @@ if [ "$cdn_group" = "streamer" ]; then
 	d_log "Streamer mode detected, applying define"
 	build_out+="
 #define NIGHTSHADE"
+fi
+
+if [ -n "$merged_prs" ]; then
+	# Stamp some PR values if we have test merges active
+	d_log "Testmerges detected, stamping PR IDs"
+	mkdir deploy/testmerges
+	split_merged_prs=$(echo $merged_prs | tr "," "\n")
+	for merged_pr in $split_merged_prs; do
+		curl -s \
+			-H "Accept: application/vnd.github+json" \
+			-H "Authorization: Bearer $github_token"\
+			-H "X-GitHub-Api-Version: 2022-11-28" \
+			https://api.github.com/repos/goonstation/goonstation/pulls/$merged_pr \
+			-o deploy/testmerges/$merged_pr.json > /dev/null
+	done
+	build_out+="
+#define TESTMERGE_PRS list($merged_prs)"
 fi
 
 d_log "Finished pre-compile steps"
@@ -108,11 +138,15 @@ export LD_LIBRARY_PATH=$BYONDDIR/bin${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 d_log "Compiling"
 DreamMaker goonstation.dme | tee "$compile_log" | ts "      [%Y/%m/%d %H:%M:%S]"
 
+if [ ! -f "goonstation.dmb" ]; then
+	d_log "Compilation failed"
+	exit 1
+fi
+
 d_log "Copying built files to pre-deploy"
-rm -r ../deploy/new/* >/dev/null 2>&1 || true
-mkdir ../deploy/new/+secret
-cp -r goonstation.dmb goonstation.rsc buildByond.conf assets config strings sound ../deploy/new
-cp -r +secret/assets +secret/strings ../deploy/new/+secret
+mkdir ../deploy/+secret
+cp -r goonstation.dmb goonstation.rsc assets config strings sound ../deploy
+cp -r +secret/assets +secret/strings ../deploy/+secret
 
 d_log "Finished compile steps"
 

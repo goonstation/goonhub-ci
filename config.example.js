@@ -4,5 +4,9 @@ export default {
 		url: '',
 		port: '',
 		key: ''
+	},
+	github: {
+		user: '',
+		token: ''
 	}
 }
