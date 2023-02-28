@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd /rust-g/target/i686-unknown-linux-gnu/release
+cd /rust-g/goonstation-rust-g/target/i686-unknown-linux-gnu/release
 
 cp librust_g.so /remote_ss13/servers/main1/game/update
 cp librust_g.so /remote_ss13/servers/main2/game/update
