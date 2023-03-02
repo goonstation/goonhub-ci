@@ -64,6 +64,11 @@ export default class Runner {
 				continue
 			}
 
+			if (NewRepo.getBranch().startsWith('testmerge-')) {
+				// Busy doing a testmerge, ignore it
+				continue
+			}
+
 			NewRepo.fetch()
 			const currentHash = NewRepo.getCurrentLocalHash()
 			const latestHash = NewRepo.getLatestOriginHash()
