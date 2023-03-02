@@ -42,6 +42,12 @@ app.post('/switch-branch', (req, res) => {
 	const branch = req.body.branch
 	if (!server) return res.status(400).json({error: 'Missing server ID'})
 	if (!branch) return res.status(400).json({error: 'Missing branch'})
+
+	if (RunnerInstance.currentJobs.includes(server)) {
+		res.status(400).json({error: 'Unable to switch the branch of a server that is currently building'})
+		return
+	}
+
 	try {
 		Branches.switchBranch(server, branch)
 		res.status(200).json({success: true})
