@@ -90,6 +90,7 @@ export default class Build extends EventEmitter {
 			} catch (e) {}
 
 			// Build an info object to inform external services of our status
+			this.Repo.checkout(this.currentBranch)
 			const commit = this.Repo.getCurrentLocalHash()
 			const payload = {
 				server: this.serverId,
@@ -111,7 +112,6 @@ export default class Build extends EventEmitter {
 			}
 
 			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
-			this.Repo.checkout(this.currentBranch)
 			this.emit('complete')
 		})
 	}
