@@ -76,7 +76,7 @@ app.post('/cancel', (req, res) => {
 		res.status(200).json({success: true}).end()
 		log(`Manual cancel for ${server} triggered`)
 		const Build = RunnerInstance.getBuildByServerId(server)
-		Build.cancel()
+		if (Build) Build.cancel()
 	} catch(e) {
 		log(e)
 		// res.status(500).json({error: e.message})

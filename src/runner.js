@@ -8,7 +8,8 @@ export default class Runner {
 	queuedJobs = []
 
 	getBuildByServerId(serverId) {
-		return this.currentJobs.find((job) => job.serverId === serverId)
+		const job = this.currentJobs.find((job) => job.serverId === serverId)
+		return job.build
 	}
 
 	build(serverId, opts) {
