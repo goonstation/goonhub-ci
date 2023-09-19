@@ -63,13 +63,13 @@ export default class Build extends EventEmitter {
 			}
 
 			if (error) {
-				log(`Building ${this.serverId} failed. Error: ${error}`)
+				log(`Building ${this.serverId} failed. Error:\n${error}`)
 				payload.error = error || true
 			} else if (cancelled) {
 				log(`Building ${this.serverId} cancelled!`)
 				payload.cancelled = true
 			} else {
-				log(`Building ${this.serverId} succeeded! Output:\n${stdout}`)
+				log(`Building ${this.serverId} succeeded! Output:\n${out}`)
 			}
 
 			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
