@@ -73,10 +73,14 @@ app.post('/cancel', (req, res) => {
 	const server = req.body.server
 	if (!server) return res.status(400).json({error: 'Missing server ID'})
 	try {
-		res.status(200).json({success: true}).end()
 		log(`Manual cancel for ${server} triggered`)
 		const Build = RunnerInstance.getBuildByServerId(server)
-		if (Build) Build.cancel()
+		if (Build) {
+			res.status(200).json({success: true}).end()
+			Build.cancel()
+		} else {
+			res.status(404).json({success: false}).end()
+		}
 	} catch(e) {
 		log(e)
 		// res.status(500).json({error: e.message})
