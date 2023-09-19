@@ -18,6 +18,7 @@ export default class Build extends EventEmitter {
 	mergeConflicts = []
 	compileLog = null
 	process = null
+	cancelled = false
 
 	constructor(serverId, options) {
 		super()
@@ -38,7 +39,7 @@ export default class Build extends EventEmitter {
 		fs.writeFileSync(`${this.serverFolder}/mapoverride`, map.toUpperCase())
 	}
 
-	onFinishBuild(out, error, cancelled) {
+	onFinishBuild(out, error) {
 			// Grab the last compile log data and clean up after ourselves
 			let lastCompileLogs = ''
 			try {
@@ -65,7 +66,7 @@ export default class Build extends EventEmitter {
 			if (error) {
 				log(`Building ${this.serverId} failed. Error:\n${error}`)
 				payload.error = error || true
-			} else if (cancelled) {
+			} else if (this.cancelled) {
 				log(`Building ${this.serverId} cancelled!`)
 				payload.cancelled = true
 			} else {
@@ -130,8 +131,7 @@ export default class Build extends EventEmitter {
 	cancel() {
 		if (!this.process) return
 		log(`Cancelling build for ${this.serverId}`)
-		treeKill(this.process.pid, 'SIGKILL', () => {
-			this.onFinishBuild(null, null, true)
-		})
+		this.cancelled = true
+		treeKill(this.process.pid, 'SIGKILL')
 	}
 }
