@@ -9,7 +9,7 @@ export default class Runner {
 
 	getBuildByServerId(serverId) {
 		const job = this.currentJobs.find((job) => job.serverId === serverId)
-		return job.build
+		return job ? job.build : null
 	}
 
 	build(serverId, opts) {
