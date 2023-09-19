@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { exec } from 'child_process'
+import treeKill from 'tree-kill'
 import EventEmitter from 'events'
 import config from '../config.js'
 import { log, serversFolder } from './utils.js'
@@ -15,6 +16,8 @@ const defaultOptions = {
 
 export default class Build extends EventEmitter {
 	mergeConflicts = []
+	compileLog = null
+	process = null
 
 	constructor(serverId, options) {
 		super()
@@ -33,6 +36,44 @@ export default class Build extends EventEmitter {
 
 	setMapOverride(map) {
 		fs.writeFileSync(`${this.serverFolder}/mapoverride`, map.toUpperCase())
+	}
+
+	onFinishBuild(out, error, cancelled) {
+			// Grab the last compile log data and clean up after ourselves
+			let lastCompileLogs = ''
+			try {
+				lastCompileLogs = fs.readFileSync(this.compileLog).toString().trim()
+				fs.unlinkSync(this.compileLog)
+			} catch (e) {}
+
+			// Build an info object to inform external services of our status
+			this.Repo.checkout(this.currentBranch)
+			const commit = this.Repo.getCurrentLocalHash()
+			const payload = {
+				server: this.serverId,
+				last_compile: lastCompileLogs,
+				branch: this.currentBranch,
+				author: this.Repo.getAuthor(commit),
+				message: this.Repo.getMessage(commit),
+				mapSwitch: !!this.switchToMap,
+				commit: commit,
+				error: null,
+				cancelled: false,
+				mergeConflicts: this.mergeConflicts
+			}
+
+			if (error) {
+				log(`Building ${this.serverId} failed. Error: ${error}`)
+				payload.error = error || true
+			} else if (cancelled) {
+				log(`Building ${this.serverId} cancelled!`)
+				payload.cancelled = true
+			} else {
+				log(`Building ${this.serverId} succeeded! Output:\n${stdout}`)
+			}
+
+			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
+			this.emit('complete')
 	}
 
 	mergePrAtCommit(prId, commit) {
@@ -75,44 +116,22 @@ export default class Build extends EventEmitter {
 			})
 		}
 
-		const compileLog = `/app/logs/builds/${this.serverId}-${Date.now()}.log`
-		let cmd = `/bin/bash /app/scripts/gate.sh -s ${this.serverId} -b ${compileLog} -c ${config.github.token} -n ${this.currentBranch}`
+		this.compileLog = `/app/logs/builds/${this.serverId}-${Date.now()}.log`
+		let cmd = `/bin/bash /app/scripts/gate.sh -s ${this.serverId} -b ${this.compileLog} -c ${config.github.token} -n ${this.currentBranch}`
 		if (this.skipCdn) cmd += ' -r'
 		if (successfulMergePrs.length) {
 			cmd += ` -p ${successfulMergePrs.join(',')}`
 		}
-		exec(cmd, (err, stdout, stderr) => {
-			// Grab the last compile log data and clean up after ourselves
-			let lastCompileLogs = ''
-			try {
-				lastCompileLogs = fs.readFileSync(compileLog).toString().trim()
-				fs.unlinkSync(compileLog)
-			} catch (e) {}
+		this.process = exec(cmd, (err, stdout, stderr) => {
+			this.onFinishBuild(stdout, stderr)
+		})
+	}
 
-			// Build an info object to inform external services of our status
-			this.Repo.checkout(this.currentBranch)
-			const commit = this.Repo.getCurrentLocalHash()
-			const payload = {
-				server: this.serverId,
-				last_compile: lastCompileLogs,
-				branch: this.currentBranch,
-				author: this.Repo.getAuthor(commit),
-				message: this.Repo.getMessage(commit),
-				mapSwitch: !!this.switchToMap,
-				commit: commit,
-				error: null,
-				mergeConflicts: this.mergeConflicts
-			}
-
-			if (err || stderr) {
-				log(`Building ${this.serverId} failed. Error: ${err}. Stderr: ${stderr}`)
-				payload.error = stderr || true
-			} else {
-				log(`Building ${this.serverId} succeeded! Output:\n${stdout}`)
-			}
-
-			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
-			this.emit('complete')
+	cancel() {
+		if (!this.process) return
+		log(`Cancelling build for ${this.serverId}`)
+		treeKill(this.process.pid, 'SIGKILL', () => {
+			this.onFinishBuild(null, null, true)
 		})
 	}
 }

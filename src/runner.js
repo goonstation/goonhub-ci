@@ -7,11 +7,15 @@ export default class Runner {
 	currentJobs = []
 	queuedJobs = []
 
+	getBuildByServerId(serverId) {
+		return this.currentJobs.find((job) => job.serverId === serverId)
+	}
+
 	build(serverId, opts) {
 		log(`Building ${serverId} with ${JSON.stringify(opts)}`)
 
 		// Queue this server for a build if we're already building it
-		if (this.currentJobs.includes(serverId)) {
+		if (this.currentJobs.find((job) => job.serverId === serverId)) {
 			if (!this.queuedJobs.find(e => e.serverId === serverId)) {
 				log(`Queueing ${serverId} for a build as it's already being built. ${JSON.stringify(this.queuedJobs)}`)
 				this.queuedJobs.push({ serverId, opts })
@@ -21,19 +25,19 @@ export default class Runner {
 			return
 		}
 
-		this.currentJobs.push(serverId)
 		const NewBuild = new Build(serverId, opts)
+		this.currentJobs.push({ serverId, build: NewBuild })
 		NewBuild.run()
 
 		NewBuild.on('complete', () => {
-			this.currentJobs = this.currentJobs.filter(e => e !== serverId)
+			this.currentJobs = this.currentJobs.filter((job) => job.serverId !== serverId)
 
 			// Trigger any queued items now
 			if (this.queuedJobs.length) {
 				for (const queuedJob of this.queuedJobs) {
 					const qServerId = queuedJob.serverId
 					// Already building this server
-					if (this.currentJobs.includes(qServerId)) continue
+					if (this.currentJobs.find((job) => job.serverId === qServerId)) continue
 					// Remove the queued job, and trigger it
 					log(`Triggering queued job for ${serverId}. ${JSON.stringify(this.queuedJobs)}`)
 					this.queuedJobs = this.queuedJobs.filter(e => e.serverId !== qServerId)
