@@ -22,8 +22,8 @@ app.use((req, res, next) => {
 app.get('/status', (req, res) => {
 	res.json({
 		maxCompileJobs: RunnerInstance.maxJobs,
-		currentCompileJobs: RunnerInstance.currentJobs,
-		queuedJobs: RunnerInstance.queuedJobs.map(e => e.server)
+		currentCompileJobs: RunnerInstance.currentJobs.map(e => e.serverId),
+		queuedJobs: RunnerInstance.queuedJobs.map(e => e.serverId)
 	}).end()
 })
 
@@ -43,7 +43,7 @@ app.post('/switch-branch', (req, res) => {
 	if (!server) return res.status(400).json({error: 'Missing server ID'})
 	if (!branch) return res.status(400).json({error: 'Missing branch'})
 
-	if (RunnerInstance.currentJobs.includes(server)) {
+	if (RunnerInstance.currentJobs.find((job) => job.serverId === server)) {
 		res.status(400).json({error: 'Unable to switch the branch of a server that is currently building'})
 		return
 	}
