@@ -124,7 +124,7 @@ export default class Build extends EventEmitter {
 			cmd += ` -p ${successfulMergePrs.join(',')}`
 		}
 		this.process = exec(cmd, (err, stdout, stderr) => {
-			this.onFinishBuild(stdout, stderr)
+			this.onFinishBuild(stdout, err || stderr)
 		})
 	}
 
