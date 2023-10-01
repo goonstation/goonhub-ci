@@ -4,6 +4,7 @@ import config from './config.js'
 import Runner from './src/runner.js'
 import Branches from './src/branches.js'
 import TestMerges from './src/testmerges.js'
+import Metrics from './src/metrics.js'
 import { log, serverConfig } from './src/utils.js'
 
 const hostname = '0.0.0.0'
@@ -173,6 +174,17 @@ app.delete('/test-merges', async (req, res) => {
 	} catch (e) {
 		res.status(500).json({error: e.message})
 	}
+})
+
+app.get('/stats', async (req, res) => {
+	const data = {}
+	const allMetrics = await Metrics.getAll()
+	for (const row of allMetrics) {
+		data[row.type] = row.amount
+	}
+	const averageDurationRow = await Metrics.getAverageBuildDuration()
+	data.average_build_duration = averageDurationRow.average_duration
+	res.json(data).end()
 })
 
 app.listen(port, hostname, () => {

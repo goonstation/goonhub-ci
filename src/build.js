@@ -7,6 +7,7 @@ import { log, serversFolder } from './utils.js'
 import Repo from './repo.js'
 import MedAss from './medass.js'
 import TestMerges from './testmerges.js'
+import Metrics from './metrics.js'
 
 const defaultOptions = {
 	skipNotifier: false,
@@ -19,6 +20,7 @@ export default class Build extends EventEmitter {
 	compileLog = null
 	process = null
 	cancelled = false
+	startTime = null
 
 	constructor(serverId, options) {
 		super()
@@ -63,14 +65,25 @@ export default class Build extends EventEmitter {
 				mergeConflicts: this.mergeConflicts
 			}
 
+			const endTime = new Date().getTime()
+			const duration = endTime - this.startTime
+
 			if (error) {
 				log(`Building ${this.serverId} failed. Error:\n${error}`)
 				payload.error = error || true
+				Metrics.increment('failed_builds')
 			} else if (this.cancelled) {
 				log(`Building ${this.serverId} cancelled!`)
 				payload.cancelled = true
+				Metrics.increment('cancelled_builds')
 			} else {
 				log(`Building ${this.serverId} succeeded! Output:\n${out}`)
+				Metrics.increment('successful_builds')
+				Metrics.addBuildDuration(this.serverId, duration)
+
+				if (!!this.switchToMap) {
+					Metrics.increment('map_switch_builds')
+				}
 			}
 
 			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
@@ -100,6 +113,7 @@ export default class Build extends EventEmitter {
 	}
 
 	async run() {
+		this.startTime = new Date().getTime()
 		// Pre-run steps
 		this.Repo.fetch()
 		this.Repo.update()
