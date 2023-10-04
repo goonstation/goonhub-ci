@@ -148,7 +148,6 @@ export default class Build extends EventEmitter {
 	}
 
 	cancel() {
-		if (!this.process) return
 		log(`Cancelling build for ${this.serverId}`)
 		this.cancelled = true
 		if (this.process) {
