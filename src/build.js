@@ -137,15 +137,22 @@ export default class Build extends EventEmitter {
 		if (successfulMergePrs.length) {
 			cmd += ` -p ${successfulMergePrs.join(',')}`
 		}
-		this.process = exec(cmd, (err, stdout, stderr) => {
-			this.onFinishBuild(stdout, err || stderr)
-		})
+
+		if (this.cancelled) {
+			this.onFinishBuild()
+		} else {
+			this.process = exec(cmd, (err, stdout, stderr) => {
+				this.onFinishBuild(stdout, err || stderr)
+			})
+		}
 	}
 
 	cancel() {
 		if (!this.process) return
 		log(`Cancelling build for ${this.serverId}`)
 		this.cancelled = true
-		treeKill(this.process.pid, 'SIGKILL')
+		if (this.process) {
+			treeKill(this.process.pid, 'SIGKILL')
+		}
 	}
 }
