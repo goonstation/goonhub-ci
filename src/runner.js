@@ -57,7 +57,9 @@ export default class Runner {
 			})
 		}
 
-		NewBuild.on('complete', this.onBuildComplete(serverId))
+		NewBuild.on('complete', () => {
+			this.onBuildComplete(serverId)
+		})
 	}
 
 	run() {
