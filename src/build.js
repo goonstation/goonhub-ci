@@ -68,14 +68,14 @@ export default class Build extends EventEmitter {
 			const endTime = new Date().getTime()
 			const duration = endTime - this.startTime
 
-			if (error) {
-				log(`Building ${this.serverId} failed. Error:\n${error}`)
-				payload.error = error || true
-				Metrics.increment('failed_builds')
-			} else if (this.cancelled) {
+			if (this.cancelled) {
 				log(`Building ${this.serverId} cancelled!`)
 				payload.cancelled = true
 				Metrics.increment('cancelled_builds')
+			} else if (error) {
+				log(`Building ${this.serverId} failed. Error:\n${error}`)
+				payload.error = error || true
+				Metrics.increment('failed_builds')
 			} else {
 				log(`Building ${this.serverId} succeeded! Output:\n${out}`)
 				Metrics.increment('successful_builds')
