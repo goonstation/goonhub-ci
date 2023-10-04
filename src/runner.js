@@ -13,7 +13,7 @@ export default class Runner {
 		return job ? job.build : null
 	}
 
-	onBuildComplete() {
+	onBuildComplete(serverId) {
 		this.currentJobs = this.currentJobs.filter((job) => job.serverId !== serverId)
 
 		// Trigger any queued items now
@@ -57,7 +57,7 @@ export default class Runner {
 			})
 		}
 
-		NewBuild.on('complete', this.onBuildComplete)
+		NewBuild.on('complete', this.onBuildComplete(serverId))
 	}
 
 	run() {
