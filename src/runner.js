@@ -1,6 +1,7 @@
 import { log, serverConfig, shuffleArray } from './utils.js'
 import Build from './build.js'
 import Repo from './repo.js'
+import MedAss from './medass.js'
 
 export default class Runner {
 	maxJobs = 2
@@ -10,6 +11,24 @@ export default class Runner {
 	getBuildByServerId(serverId) {
 		const job = this.currentJobs.find((job) => job.serverId === serverId)
 		return job ? job.build : null
+	}
+
+	onBuildComplete() {
+		this.currentJobs = this.currentJobs.filter((job) => job.serverId !== serverId)
+
+		// Trigger any queued items now
+		if (this.queuedJobs.length) {
+			for (const queuedJob of this.queuedJobs) {
+				const qServerId = queuedJob.serverId
+				// Already building this server
+				if (this.currentJobs.find((job) => job.serverId === qServerId)) continue
+				// Remove the queued job, and trigger it
+				log(`Triggering queued job for ${serverId}. ${JSON.stringify(this.queuedJobs)}`)
+				this.queuedJobs = this.queuedJobs.filter(e => e.serverId !== qServerId)
+				this.build(qServerId, queuedJob.opts)
+				break
+			}
+		}
 	}
 
 	build(serverId, opts) {
@@ -28,25 +47,17 @@ export default class Runner {
 
 		const NewBuild = new Build(serverId, opts)
 		this.currentJobs.push({ serverId, build: NewBuild })
-		NewBuild.run()
 
-		NewBuild.on('complete', () => {
-			this.currentJobs = this.currentJobs.filter((job) => job.serverId !== serverId)
+		try {
+			NewBuild.run()
+		} catch (e) {
+			MedAss.sendBuildComplete({
+				server: serverId,
+				error: e.message
+			})
+		}
 
-			// Trigger any queued items now
-			if (this.queuedJobs.length) {
-				for (const queuedJob of this.queuedJobs) {
-					const qServerId = queuedJob.serverId
-					// Already building this server
-					if (this.currentJobs.find((job) => job.serverId === qServerId)) continue
-					// Remove the queued job, and trigger it
-					log(`Triggering queued job for ${serverId}. ${JSON.stringify(this.queuedJobs)}`)
-					this.queuedJobs = this.queuedJobs.filter(e => e.serverId !== qServerId)
-					this.build(qServerId, queuedJob.opts)
-					break
-				}
-			}
-		})
+		NewBuild.on('complete', this.onBuildComplete)
 	}
 
 	run() {

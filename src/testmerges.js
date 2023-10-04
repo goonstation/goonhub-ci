@@ -4,7 +4,7 @@ class TestMerges {
 	table = 'testmerges'
 
 	constructor() {
-		this.db = new sqlite3.Database('/app/db/testmerges.db', (err) => {
+		this.db = new sqlite3.Database('db/testmerges.db', (err) => {
 			if (err) {
 				console.error('Failed to connect to test merge db', err)
 				return
