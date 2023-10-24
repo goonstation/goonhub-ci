@@ -60,7 +60,7 @@ export default class Build extends EventEmitter {
 				message: this.Repo.getMessage(commit),
 				mapSwitch: !!this.switchToMap,
 				commit: commit,
-				error: null,
+				error: false,
 				cancelled: false,
 				mergeConflicts: this.mergeConflicts
 			}
