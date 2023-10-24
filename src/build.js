@@ -74,7 +74,8 @@ export default class Build extends EventEmitter {
 				Metrics.increment('cancelled_builds')
 			} else if (error) {
 				log(`Building ${this.serverId} failed. Error:\n${error}`)
-				payload.error = error || true
+				if (typeof error === 'object') payload.error = true
+				else payload.error = error
 				Metrics.increment('failed_builds')
 			} else {
 				log(`Building ${this.serverId} succeeded! Output:\n${out}`)
@@ -143,7 +144,7 @@ export default class Build extends EventEmitter {
 			this.onFinishBuild()
 		} else {
 			this.process = exec(cmd, (err, stdout, stderr) => {
-				this.onFinishBuild(stdout, err || stderr)
+				this.onFinishBuild(stdout, stderr || err)
 			})
 		}
 	}
