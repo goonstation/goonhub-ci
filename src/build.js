@@ -87,7 +87,6 @@ export default class Build extends EventEmitter {
 				}
 			}
 
-			log(`Medass Payload:\n${JSON.stringify(payload)}`)
 			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
 			this.emit('complete')
 	}
