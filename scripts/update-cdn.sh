@@ -17,6 +17,7 @@ d_log "Setting CDN group"
 cdn_group="main"
 [[ "$server_id" == dev* ]] && cdn_group="dev"
 [[ "$server_id" == streamer* ]] && cdn_group="streamer"
+[[ "$server_id" == main5 ]] && cdn_group="event"
 
 cd /home/ss13/cdn-build
 if [ ! -d "$cdn_group" ]; then

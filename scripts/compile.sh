@@ -25,11 +25,13 @@ d_log "Setting CDN group"
 cdn_group="main"
 [[ "$server_id" == dev* ]] && cdn_group="dev"
 [[ "$server_id" == streamer* ]] && cdn_group="streamer"
+[[ "$server_id" == main5 ]] && cdn_group="event"
 
 # Set preload URL from CDN group
 d_log "Setting preload RSC URL"
 preload_rsc_url="https://cdn.goonhub.com/rsc.zip"
 [ "$cdn_group" = "dev" ] && preload_rsc_url="https://cdndev.goonhub.com/rsc.zip"
+[ "$cdn_group" = "event" ] && preload_rsc_url="https://cdnevent.goonhub.com/rsc.zip"
 [ "$cdn_group" = "streamer" ] && preload_rsc_url="https://cdnstreamer.goonhub.com/rsc.zip"
 
 # Yeah I guess we'll just set rp mode this dumb way
