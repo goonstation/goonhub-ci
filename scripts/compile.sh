@@ -95,6 +95,8 @@ if [ -n "$merged_prs" ]; then
 	mkdir deploy/testmerges
 	split_merged_prs=$(echo $merged_prs | tr "," "\n")
 	for merged_pr in $split_merged_prs; do
+		build_out+="
+#define TESTMERGE_$merged_pr"
 		curl -s \
 			-H "Accept: application/vnd.github+json" \
 			-H "Authorization: Bearer $github_token"\
