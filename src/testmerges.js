@@ -81,14 +81,25 @@ class TestMerges {
 
 	remove(prId, serverId) {
 		return new Promise((resolve, reject) => {
-			return this.db.run(
-				`DELETE FROM ${this.table} WHERE PR = $pr AND server = $server`,
-				{ $pr: prId, $server: serverId },
-				(error) => {
-					if (error) return reject(error)
-					return resolve()
-				}
-			)
+			return this.db.serialize(() => {
+				this.db.get(
+					`SELECT * FROM ${this.table} WHERE PR = $pr AND server = $server`,
+					{ $pr: prId, $server: serverId },
+					(error, row) => {
+						if (error) return reject(error)
+						if (!row) return reject('That server does not have that PR merged')
+					}
+				)
+
+				this.db.run(
+					`DELETE FROM ${this.table} WHERE PR = $pr AND server = $server`,
+					{ $pr: prId, $server: serverId },
+					(error) => {
+						if (error) return reject(error)
+						return resolve()
+					}
+				)
+			})
 		})
 	}
 }
