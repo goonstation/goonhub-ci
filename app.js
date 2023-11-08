@@ -78,6 +78,7 @@ app.post('/cancel', (req, res) => {
 		const Build = RunnerInstance.getBuildByServerId(server)
 		if (Build) {
 			res.status(200).json({success: true}).end()
+			RunnerInstance.removeFromQueue(server)
 			Build.cancel()
 		} else {
 			res.status(404).json({success: false}).end()

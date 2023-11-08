@@ -13,8 +13,24 @@ export default class Runner {
 		return job ? job.build : null
 	}
 
-	onBuildComplete(serverId) {
+	addToQueue(serverId, opts) {
+		this.queuedJobs.push({ serverId, opts })
+	}
+
+	removeFromQueue(serverId) {
+		this.queuedJobs = this.queuedJobs.filter(e => e.serverId !== serverId)
+	}
+
+	onBuildComplete(serverId, cancelled) {
 		this.currentJobs = this.currentJobs.filter((job) => job.serverId !== serverId)
+
+		// Avoid building the same server again if we cancelled a build for it
+		if (cancelled) {
+			const sameServerQueuedJob = this.queuedJobs.find((job) => job.serverId === serverId)
+			if (sameServerQueuedJob) {
+				this.removeFromQueue(serverId)
+			}
+		}
 
 		// Trigger any queued items now
 		if (this.queuedJobs.length) {
@@ -24,7 +40,7 @@ export default class Runner {
 				if (this.currentJobs.find((job) => job.serverId === qServerId)) continue
 				// Remove the queued job, and trigger it
 				log(`Triggering queued job for ${serverId}. ${JSON.stringify(this.queuedJobs)}`)
-				this.queuedJobs = this.queuedJobs.filter(e => e.serverId !== qServerId)
+				this.removeFromQueue(qServerId)
 				this.build(qServerId, queuedJob.opts)
 				break
 			}
@@ -38,7 +54,7 @@ export default class Runner {
 		if (this.currentJobs.find((job) => job.serverId === serverId)) {
 			if (!this.queuedJobs.find(e => e.serverId === serverId)) {
 				log(`Queueing ${serverId} for a build as it's already being built. ${JSON.stringify(this.queuedJobs)}`)
-				this.queuedJobs.push({ serverId, opts })
+				this.addToQueue(serverId, opts)
 			} else {
 				log(`Already building ${serverId} and it's already queued. Stop building me!! ${JSON.stringify(this.queuedJobs)}`)
 			}
@@ -57,8 +73,8 @@ export default class Runner {
 			})
 		}
 
-		NewBuild.on('complete', () => {
-			this.onBuildComplete(serverId)
+		NewBuild.on('complete', (cancelled) => {
+			this.onBuildComplete(serverId, cancelled)
 		})
 	}
 

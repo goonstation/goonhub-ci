@@ -88,7 +88,7 @@ export default class Build extends EventEmitter {
 			}
 
 			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
-			this.emit('complete')
+			this.emit('complete', this.cancelled)
 	}
 
 	mergePrAtCommit(prId, commit) {
