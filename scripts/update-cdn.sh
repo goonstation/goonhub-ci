@@ -58,7 +58,7 @@ cp -R "$build_dir/browserassets/"* .
 d_log "Running browserassets compilation"
 git -C "$repo_dir" rev-parse HEAD > revision
 npm install --no-progress >/dev/null 2>&1
-npm run build --servertype=$cdn_group >/dev/null 2>&1
+npm run build -- --servertype "$cdn_group" >/dev/null 2>&1
 
 d_log "Copying built files to pre-deploy"
 cp -r build "/ss13_servers/$server_id/deploy/cdn"
