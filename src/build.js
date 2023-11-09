@@ -91,21 +91,32 @@ export default class Build extends EventEmitter {
 			this.emit('complete', this.cancelled)
 	}
 
-	mergePrAtCommit(prId, commit) {
-		log(`Merging PR ${prId} at commit ${commit}`)
-		const prBranch = `pr-${prId}`
+	mergePrAtCommit(testMerge) {
+		log(`Merging PR ${testMerge.PR} at commit ${testMerge.commit}`)
+		const prBranch = `pr-${testMerge.PR}`
+
 		// This fetches the PR and makes a new branch at the latest HEAD
-		this.Repo.fetchPr(prId)
-		// Move the new PR branch to a specific commit if specified
-		if (commit) {
-			this.Repo.checkout(prBranch)
-			this.Repo.resetBranchToCommit(commit)
-			this.Repo.checkout(this.testMergeBranch)
+		this.Repo.fetchPr(testMerge.PR)
+		this.Repo.checkout(prBranch)
+
+		if (testMerge.commit) {
+			// Move the new PR branch to a specific commit if specified
+			this.Repo.resetBranchToCommit(testMerge.commit)
+		} else {
+			// If no commit was specified, save whatever the latest HEAD commit is
+			// This is so we don't always update to the latest on future merges, which introduces security risks
+			const latestCommitHash = this.Repo.getCurrentLocalHash()
+			TestMerges.update(testMerge.PR, testMerge.server, testMerge.updater, latestCommitHash)
 		}
+
+		// Move back to our primary test merge branch
+		this.Repo.checkout(this.testMergeBranch)
+
+		// Attempt to merge PR in, with handling to skip it if there are conflicts
 		try {
 			this.Repo.merge(prBranch)
 		} catch (e) {
-			this.mergeConflicts.push({ prId, files: this.Repo.getConflictedFiles() })
+			this.mergeConflicts.push({ prId: testMerge.PR, files: this.Repo.getConflictedFiles() })
 			this.Repo.abortMerge()
 			return false
 		}
@@ -126,7 +137,7 @@ export default class Build extends EventEmitter {
 		if (merges.length) {
 			this.Repo.createAndCheckoutBranch(this.testMergeBranch)
 			merges.forEach((merge) => {
-				if (this.mergePrAtCommit(merge.PR, merge.commit)) {
+				if (this.mergePrAtCommit(merge)) {
 					successfulMergePrs.push(merge.PR)
 				}
 			})
