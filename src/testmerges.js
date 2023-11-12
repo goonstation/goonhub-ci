@@ -11,6 +11,19 @@ class TestMerges {
 			}
 
 			console.log('Connected to test merge db')
+
+			this.db.run(`
+				CREATE TABLE IF NOT EXISTS "testmerges" (
+					"PR"	INTEGER NOT NULL,
+					"server"	TEXT NOT NULL,
+					"requester"	TEXT,
+					"updater"	TEXT,
+					"commit"	TEXT,
+					"created_at"	TEXT,
+					"updated_at"	TEXT,
+					PRIMARY KEY("PR","server")
+				)
+			`)
 		})
 	}
 

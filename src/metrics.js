@@ -9,6 +9,19 @@ class Metrics {
 			}
 
 			console.log('Connected to metrics db')
+
+			this.db.run(`
+				CREATE TABLE IF NOT EXISTS "build_durations" (
+					"server"	TEXT,
+					"duration"	INTEGER
+				)
+			`)
+			this.db.run(`
+				CREATE TABLE IF NOT EXISTS "metrics" (
+					"type"	TEXT,
+					"amount"	INTEGER
+				)
+			`)
 		})
 	}
 

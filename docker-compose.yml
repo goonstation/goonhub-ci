@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  ci:
+    container_name: goonhub-ci
+    hostname: goonhub-ci
+    restart: unless-stopped
+    build: .
+    working_dir: /app
+    user: ss13
+    volumes:
+      - .:/app:rw
+      - ./keys.example.txt:/app/keys.txt:ro
+      - ./servers.example.conf:/ss13_servers.conf:ro
+      - ./dev/servers:/ss13_servers:rw
+      - ./dev/byond:/byond:rw
+      - ./dev/rust-g:/rust-g:rw
+      - ./dev/cdn:/goonhub_cdn:rw
+      - ./dev/remote:/remote_ss13:rw
+    command: bash -c "npm install && pm2-runtime process.json"
+    ports:
+      - "3000:3000"
