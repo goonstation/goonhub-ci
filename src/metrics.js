@@ -11,73 +11,54 @@ class Metrics {
 			console.log('Connected to metrics db')
 
 			this.db.run(`
-				CREATE TABLE IF NOT EXISTS "build_durations" (
+				CREATE TABLE IF NOT EXISTS "builds" (
 					"server"	TEXT,
-					"duration"	INTEGER
+					"duration"	INTEGER,
+					"success"	INTEGER,
+					"cancelled"	INTEGER,
+					"map_switch" INTEGER,
+					"timestamp"	DATETIME DEFAULT CURRENT_TIMESTAMP
 				)
 			`)
-			this.db.run(`
-				CREATE TABLE IF NOT EXISTS "metrics" (
-					"type"	TEXT,
-					"amount"	INTEGER
-				)
-			`)
 		})
 	}
 
-	getAll() {
-		return new Promise((resolve, reject) => {
-			let query = `SELECT * FROM metrics`
-			return this.db.all(query, (error, rows) => {
-				if (error) return reject(error)
-				return resolve(rows)
-			})
-		})
-	}
-
-	getAverageBuildDuration() {
-		return new Promise((resolve, reject) => {
-			return this.db.get(`SELECT avg(duration) AS average_duration FROM build_durations`, (error, row) => {
-				if (error) return reject(error)
-				return resolve(row)
-			})
-		})
-	}
-
-	increment(type) {
+	insertBuild(server, duration, success, cancelled, mapSwitch) {
 		return new Promise((resolve, reject) => {
 			return this.db.run(
 				`
-				UPDATE metrics
-				SET amount = amount + 1
-				WHERE type = $type
-				`,
-				{
-					$type: type
-				},
-				(error) => {
-					if (error) return reject(error)
-					return resolve()
-				}
-			)
-		})
-	}
-
-	addBuildDuration(server, duration) {
-		return new Promise((resolve, reject) => {
-			return this.db.run(
-				`
-				INSERT INTO build_durations (server, duration) VALUES ($server, $duration)
+				INSERT INTO builds (server, duration, success, cancelled, map_switch)
+				VALUES ($server, $duration, $success, $cancelled, $map_switch)
 				`,
 				{
 					$server: server,
-					$duration: duration
+					$duration: duration,
+					$success: success,
+					$cancelled: cancelled,
+					$map_switch: mapSwitch
 				},
 				(error) => {
 					if (error) return reject(error)
 					return resolve()
 				}
 			)
+		})
+	}
+
+	getBuildMetrics() {
+		return new Promise((resolve, reject) => {
+			return this.db.get(`
+				SELECT
+					(SELECT count(*) FROM builds WHERE success = 1) AS successful_builds,
+					(SELECT count(*) FROM builds WHERE success = 0) AS failed_builds,
+					(SELECT count(*) FROM builds WHERE cancelled = 1) AS cancelled_builds,
+					(SELECT count(*) FROM builds WHERE map_switch = 1) AS map_switch_builds,
+					(SELECT avg(duration) FROM builds WHERE success = 1) AS average_build_duration
+				FROM builds
+			`, (error, row) => {
+				if (error) return reject(error)
+				return resolve(row)
+			})
 		})
 	}
 }

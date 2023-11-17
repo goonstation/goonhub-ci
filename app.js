@@ -178,13 +178,7 @@ app.delete('/test-merges', async (req, res) => {
 })
 
 app.get('/stats', async (req, res) => {
-	const data = {}
-	const allMetrics = await Metrics.getAll()
-	for (const row of allMetrics) {
-		data[row.type] = row.amount
-	}
-	const averageDurationRow = await Metrics.getAverageBuildDuration()
-	data.average_build_duration = averageDurationRow.average_duration
+	const data = await Metrics.getBuildMetrics()
 	res.json(data).end()
 })
 

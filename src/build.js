@@ -71,20 +71,15 @@ export default class Build extends EventEmitter {
 			if (this.cancelled) {
 				log(`Building ${this.serverId} cancelled!`)
 				payload.cancelled = true
-				Metrics.increment('cancelled_builds')
+				Metrics.insertBuild(this.serverId, duration, false, true, false)
 			} else if (error) {
 				log(`Building ${this.serverId} failed. Error:\n${error}`)
 				if (typeof error === 'object') payload.error = true
 				else payload.error = error
-				Metrics.increment('failed_builds')
+				Metrics.insertBuild(this.serverId, duration, false, false, false)
 			} else {
 				log(`Building ${this.serverId} succeeded! Output:\n${out}`)
-				Metrics.increment('successful_builds')
-				Metrics.addBuildDuration(this.serverId, duration)
-
-				if (!!this.switchToMap) {
-					Metrics.increment('map_switch_builds')
-				}
+				Metrics.insertBuild(this.serverId, duration, true, false, !!this.switchToMap)
 			}
 
 			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
