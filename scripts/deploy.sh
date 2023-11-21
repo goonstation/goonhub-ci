@@ -7,13 +7,6 @@ cd "/ss13_servers/$server_id/deploy"
 
 d_log "Running deployment"
 
-# Set CDN group from server ID
-d_log "Setting CDN group"
-cdn_group="main"
-[[ "$server_id" == dev* ]] && cdn_group="dev"
-[[ "$server_id" == streamer* ]] && cdn_group="streamer"
-[[ "$server_id" == main5 ]] && cdn_group="event"
-
 # Move any new byond files to remote
 rsync -ar --ignore-existing /byond/* /remote_ss13/byond
 
@@ -21,13 +14,13 @@ rsync -ar --ignore-existing /byond/* /remote_ss13/byond
 if [ -f "goonstation.rsc" ]; then
 	d_log "Uploading new rsc to cdn"
 	zip -q rsc.zip goonstation.rsc
-	mv rsc.zip "/goonhub_cdn/public/$cdn_group" >/dev/null 2>&1 || true
+	mv rsc.zip "/goonhub_cdn/public/$server_id" >/dev/null 2>&1 || true
 fi
 
 # Move any new CDN files
 if [ -d "cdn" ]; then
 	d_log "Uploading new assets to cdn"
-	rsync -rl cdn/* "/goonhub_cdn/public/$cdn_group"
+	rsync -rl cdn/* "/goonhub_cdn/public/$server_id"
 	rm -r cdn
 fi
 

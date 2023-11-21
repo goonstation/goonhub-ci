@@ -20,19 +20,9 @@ if [ -f "mapoverride" ]; then
 	d_log "Map override found: $map_override"
 fi
 
-# Set CDN group from server ID
-d_log "Setting CDN group"
-cdn_group="main"
-[[ "$server_id" == dev* ]] && cdn_group="dev"
-[[ "$server_id" == streamer* ]] && cdn_group="streamer"
-[[ "$server_id" == main5 ]] && cdn_group="event"
-
 # Set preload URL from CDN group
 d_log "Setting preload RSC URL"
-preload_rsc_url="https://cdn.goonhub.com/rsc.zip"
-[ "$cdn_group" = "dev" ] && preload_rsc_url="https://cdndev.goonhub.com/rsc.zip"
-[ "$cdn_group" = "event" ] && preload_rsc_url="https://cdnevent.goonhub.com/rsc.zip"
-[ "$cdn_group" = "streamer" ] && preload_rsc_url="https://cdnstreamer.goonhub.com/rsc.zip"
+preload_rsc_url="https://cdn-$server_id.goonhub.com/rsc.zip"
 
 # Yeah I guess we'll just set rp mode this dumb way
 d_log "Setting RP mode"
@@ -83,7 +73,7 @@ if [ -n "$rp_mode" ]; then
 #define RP_MODE"
 fi
 
-if [ "$cdn_group" = "streamer" ]; then
+if [[ "$server_id" == streamer* ]]; then
 	d_log "Streamer mode detected, applying define"
 	build_out+="
 #define NIGHTSHADE"
