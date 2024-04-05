@@ -3,4 +3,5 @@ logs/**/*.log
 config.js
 keys.txt
 keys-dev.txt
+keys-streamer.txt
 *.db
