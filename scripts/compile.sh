@@ -120,7 +120,13 @@ cd build
 d_log "Stamping __build.dm and config.txt"
 echo "$build_out" > _std/__build.dm
 cp -R +secret/config/* config/
-cat /app/keys.txt >> config/config.txt
+
+# Stamp secret keys to config
+if [[ "$server_id" == streamer* ]]; then
+	cat /app/keys-streamer.txt >> config/config.txt
+else
+	cat /app/keys.txt >> config/config.txt
+fi
 
 source buildByond.conf
 BYONDDIR="/byond/$BYOND_MAJOR_VERSION.$BYOND_MINOR_VERSION"
