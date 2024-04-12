@@ -98,14 +98,26 @@ export default class Runner {
 				continue
 			}
 
-			if (NewRepo.getBranch().startsWith('testmerge-')) {
-				// Busy doing a testmerge, ignore it
+			let currentHash
+			let latestHash
+
+			try {
+				if (NewRepo.getBranch().startsWith('testmerge-')) {
+					// Busy doing a testmerge, ignore it
+					continue
+				}
+
+				NewRepo.fetch()
+				currentHash = NewRepo.getCurrentLocalHash()
+				latestHash = NewRepo.getLatestOriginHash()
+			} catch (e) {
+				MedAss.sendBuildComplete({
+					server: id,
+					error: e.message
+				})
 				continue
 			}
 
-			NewRepo.fetch()
-			const currentHash = NewRepo.getCurrentLocalHash()
-			const latestHash = NewRepo.getLatestOriginHash()
 			if (currentHash !== latestHash) {
 				// Repo has updates, needs a build
 				this.build(id)
