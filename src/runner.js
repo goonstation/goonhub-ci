@@ -67,6 +67,7 @@ export default class Runner {
 		try {
 			NewBuild.run()
 		} catch (e) {
+			NewBuild.cleanup()
 			MedAss.sendBuildComplete({
 				server: serverId,
 				error: e.message
@@ -102,7 +103,8 @@ export default class Runner {
 			let latestHash
 
 			try {
-				if (NewRepo.getBranch().startsWith('testmerge-')) {
+				const currentBranch = NewRepo.getBranch()
+				if (currentBranch.startsWith('testmerge-') || currentBranch.startsWith('pr-')) {
 					// Busy doing a testmerge, ignore it
 					continue
 				}

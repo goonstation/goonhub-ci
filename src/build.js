@@ -41,6 +41,10 @@ export default class Build extends EventEmitter {
 		fs.writeFileSync(`${this.serverFolder}/mapoverride`, map.toUpperCase())
 	}
 
+	cleanup() {
+		this.Repo.checkout(this.currentBranch)
+	}
+
 	onFinishBuild(out, error) {
 			// Grab the last compile log data and clean up after ourselves
 			let lastCompileLogs = ''
@@ -50,7 +54,7 @@ export default class Build extends EventEmitter {
 			} catch (e) {}
 
 			// Build an info object to inform external services of our status
-			this.Repo.checkout(this.currentBranch)
+			this.cleanup()
 			const commit = this.Repo.getCurrentLocalHash()
 			const payload = {
 				server: this.serverId,
