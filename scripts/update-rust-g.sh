@@ -27,12 +27,12 @@ git reset --hard origin/master
 #./apply_patches.sh
 
 d_log "Compiling rust-g"
-rustup target add i686-unknown-linux-gnu
-rustup update
+/home/ss13/.cargo/bin/rustup target add i686-unknown-linux-gnu
+/home/ss13/.cargo/bin/rustup update
 #cd goonstation-rust-g
 export RUSTFLAGS="-C target-cpu=native"
 export PKG_CONFIG_ALLOW_CROSS=1
-cargo build --release --target i686-unknown-linux-gnu
+/home/ss13/.cargo/bin/cargo build --release --target i686-unknown-linux-gnu
 
 rm ~/rust-build.lock >/dev/null 2>&1 || true
 
