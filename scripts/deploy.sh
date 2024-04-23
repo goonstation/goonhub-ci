@@ -8,7 +8,12 @@ cd "/ss13_servers/$server_id/deploy"
 d_log "Running deployment"
 
 # Move any new byond files to remote
+d_log "Uploading new Byond files"
 rsync -ar --ignore-existing /byond/* /remote_ss13/byond
+
+# Move compiled rust-g binary
+d_log "Uploading rust-g binary"
+cp /rust-g/target/i686-unknown-linux-gnu/release/librust_g.so /remote_ss13/rust-g >/dev/null 2>&1 || true
 
 # Prepare and move rsc zip to CDN
 if [ -f "goonstation.rsc" ]; then

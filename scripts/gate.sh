@@ -39,7 +39,7 @@ rm -r /ss13_servers/$server_id/deploy/* >/dev/null 2>&1 || true
 
 /bin/bash update-byond.sh "$server_id"
 /bin/bash compile.sh "$server_id" "$compile_log" "$github_token" "$merged_prs" "$current_branch"
-#/bin/bash update-rust-g.sh "$server_id"
+/bin/bash update-rust-g.sh
 if [ ! "$skip_cdn" ]; then
 	/bin/bash update-cdn.sh "$server_id"
 fi

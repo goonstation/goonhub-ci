@@ -1,17 +1,32 @@
 #!/bin/bash
 set -e
+source utilities.sh
 
-echo "Updating rust-g"
+d_log "Updating rust-g"
 cd /rust-g
 
-echo "Fetching latest version"
+# Prevent concurrent builds
+if [ -f "~/rust-build.lock" ]; then
+	d_log "Already building rust-g, exiting"
+	exit
+fi
+
+d_log "Fetching latest version"
 git fetch
+
+if [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]; then
+	d_log "Rust-g has no updates, exiting"
+	exit
+fi
+
+touch "~/rust-build.lock"
+
 git reset --hard origin/master
 
-#echo "Applying patches"
+#d_log "Applying patches"
 #./apply_patches.sh
 
-echo "Compiling rust-g"
+d_log "Compiling rust-g"
 rustup target add i686-unknown-linux-gnu
 rustup update
 #cd goonstation-rust-g
@@ -19,4 +34,6 @@ export RUSTFLAGS="-C target-cpu=native"
 export PKG_CONFIG_ALLOW_CROSS=1
 cargo build --release --target i686-unknown-linux-gnu
 
-echo "Rust-g update complete"
+rm "~/rust-build.lock" >/dev/null 2>&1 || true
+
+d_log "Rust-g update complete"
