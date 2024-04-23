@@ -6,7 +6,7 @@ d_log "Updating rust-g"
 cd /rust-g
 
 # Prevent concurrent builds
-if [ -f "~/rust-build.lock" ]; then
+if [ -f ~/rust-build.lock ]; then
 	d_log "Already building rust-g, exiting"
 	exit
 fi
@@ -19,7 +19,7 @@ if [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]; then
 	exit
 fi
 
-touch "~/rust-build.lock"
+touch ~/rust-build.lock
 
 git reset --hard origin/master
 
@@ -34,6 +34,6 @@ export RUSTFLAGS="-C target-cpu=native"
 export PKG_CONFIG_ALLOW_CROSS=1
 cargo build --release --target i686-unknown-linux-gnu
 
-rm "~/rust-build.lock" >/dev/null 2>&1 || true
+rm ~/rust-build.lock >/dev/null 2>&1 || true
 
 d_log "Rust-g update complete"
