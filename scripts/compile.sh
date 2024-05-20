@@ -98,7 +98,7 @@ if [ -n "$merged_prs" ]; then
 #define TESTMERGE_PRS list($merged_prs)"
 fi
 
-if [ "$server_id" = "main3" ]; then
+if [ -f "tracyprofiling" ]; then
 	d_log "Setting Tracy profiler hook"
 	build_out+="
 #define TRACY_PROFILER_HOOK"

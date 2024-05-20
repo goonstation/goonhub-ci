@@ -124,6 +124,36 @@ app.post('/restart', (req, res) => {
 	}
 })
 
+app.post('/toggle-tracy', (req, res) => {
+	const server = req.body.server
+	const enable = req.body.enable
+	if (!server) return res.status(400).json({error: 'Missing server ID'})
+	if (enable === undefined) return res.status(400).json({error: 'Missing enable'})
+	try {
+		const servers = serverConfig.servers
+		let valid = false
+		for (const cServer in servers) {
+			const settings = servers[cServer]
+			if (cServer === server && settings.active) {
+				valid = true
+				break
+			}
+		}
+		if (!valid) return res.status(400).json({error: 'Invalid server ID'})
+
+		const path = `/ss13_servers/${server}/tracyprofiling`
+		if (enable) {
+			fs.closeSync(fs.openSync(path, 'w'))
+		} else {
+			fs.unlinkSync(path)
+		}
+
+		res.status(200).json({success: true})
+	} catch(e) {
+		res.status(500).json({error: e.message})
+	}
+})
+
 app.get('/test-merges/:server?', async (req, res) => {
 	const server = req.params.server
 	try {
