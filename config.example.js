@@ -8,5 +8,10 @@ export default {
 	github: {
 		user: '',
 		token: ''
+	},
+	nodeNotifier: {
+		url: '',
+		user: '',
+		pass: ''
 	}
 }

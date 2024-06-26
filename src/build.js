@@ -6,6 +6,7 @@ import config from '../config.js'
 import { log, serversFolder } from './utils.js'
 import Repo from './repo.js'
 import MedAss from './medass.js'
+import NodeNotifier from './nodenotifier.js'
 import TestMerges from './testmerges.js'
 import Metrics from './metrics.js'
 
@@ -86,7 +87,10 @@ export default class Build extends EventEmitter {
 				Metrics.insertBuild(this.serverId, duration, true, false, !!this.switchToMap)
 			}
 
-			if (!this.skipNotifier) MedAss.sendBuildComplete(payload)
+			if (!this.skipNotifier) {
+				MedAss.sendBuildComplete(payload)
+				NodeNotifier.sendBuildComplete(this.switchToMap, payload)
+			}
 			this.emit('complete', this.cancelled)
 	}
 
