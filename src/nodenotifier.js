@@ -15,7 +15,7 @@ class NodeNotifier {
 		const data = encodeURIComponent(`type=mapSwitchDone&map=${map}`)
 		const options = {
 		  host: this.url,
-		  path: `/wiz/relay?server=${payload.server}data=${data}`,
+		  path: `/wiz/relay?server=${payload.server}&data=${data}`,
 			auth: `${this.user}:${this.pass}`,
 		  method: 'GET'
 		}
