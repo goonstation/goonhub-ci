@@ -9,7 +9,7 @@ class NodeNotifier {
 	}
 
 	sendBuildComplete(map, payload) {
-		if (!this.pass) return
+		if (!map || !this.pass) return
 		if (payload.cancelled || payload.error) map = 'FAILED'
 
 		const data = encodeURIComponent(`type=mapSwitchDone&map=${map}`)
