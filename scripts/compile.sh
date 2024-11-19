@@ -119,7 +119,7 @@ d_log "Cleaning up build dir"
 rm -r build/* >/dev/null 2>&1 || true
 # Copy repo files minus hidden folders (like .git) to our build dir
 d_log "Copying files from repo dir to build dir"
-rsync -a --exclude=".*" repo/* build
+rsync -a --exclude="/.*" repo/ build/
 cd build
 
 # Stamp build-time info
