@@ -151,7 +151,7 @@ fi
 
 d_log "Copying built files to pre-deploy"
 mkdir ../deploy/+secret
-cp -r goonstation.dmb goonstation.rsc assets config strings sound buildByond.conf ../deploy
+cp -r goonstation.dmb goonstation.rsc assets config strings sound tools buildByond.conf ../deploy
 cp -r +secret/assets +secret/strings ../deploy/+secret
 
 d_log "Finished compile steps"
